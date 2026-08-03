@@ -36,7 +36,7 @@ entire data pipeline from scratch, using two different acquisition methods:
 
 ## 📁 Structure
 
-\`\`\`
+```
 shelfscope/
 ├── data/raw/
 ├── data/processed/
@@ -46,7 +46,7 @@ shelfscope/
 ├── requirements.txt
 ├── .gitignore
 └── README.md
-\`\`\`
+```
 
 ## ⚙️ Setup
 
