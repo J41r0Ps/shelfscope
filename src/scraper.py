@@ -20,14 +20,14 @@ def parse_book_card(article) -> dict:
     Extract the fields we care about from one <article class="product_pod"> tag.
     """
     title = article.h3.a["title"]
-    detail_url = BASE_URL + "catalogue/" + article.h3.a["href"].replace("../../../", "").replace("../../", "").replace("../", "")
+    detail_url = BASE_URL + "catalogue/" + article.h3.a["href"].replace("../../../", "").replace("../../", "").replace("../", "")   # This is a bit hacky, but it works for this site. The href is relative and has varying numbers of "../" at the start.
 
     price_text = article.find("p", class_="price_color").get_text(strip=True)
                  
     availability_text = article.find("p", class_="instock availability").get_text(strip=True)
 
     # star-rating class looks like: "star-rating Three" -> we want "Three"
-    rating_classes = article.find("p", class_="star-rating")["class"]
+    rating_classes = article.find("p", class_="star-rating")["class"]   # Here return a list like ['star-rating', 'Three']
     star_rating_word = rating_classes[1] if len(rating_classes) > 1 else None
 
     return {
