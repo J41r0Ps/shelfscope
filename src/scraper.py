@@ -77,3 +77,37 @@ def scrape_all_books(max_pages: int | None = None, delay: float = 0.5) -> list[d
             page_url = None
 
     return all_books
+
+def parse_book_detail(url: str, delay: float = 0.5) -> dict:
+    """
+    Scrape one book's detail page for fields not available on the listing cards:
+    category (from breadcrumb), UPC, description, and the product information table.
+    """
+    soup = get_soup(url, delay=delay)
+
+    # breadcrumb: Home > Books > <Category> > <Book title>
+    breadcrumb = soup.select("ul.breadcrumb li a")
+    category = breadcrumb[2].get_text(strip=True) if len(breadcrumb) > 2 else None
+
+    # description sits in a <p> right after the #product_description header
+    desc_header = soup.find("div", id="product_description")
+    description = desc_header.find_next_sibling("p").get_text(strip=True) if desc_header else None
+
+    # product information table -> dict of {label: value}
+    table = {}
+    for row in soup.select("table.table-striped tr"):
+        label = row.th.get_text(strip=True)
+        value = row.td.get_text(strip=True)
+        table[label] = value
+
+    return {
+        "detail_url": url,
+        "category": category,
+        "description": description,
+        "upc": table.get("UPC"),
+        "price_excl_tax_raw": table.get("Price (excl. tax)"),
+        "price_incl_tax_raw": table.get("Price (incl. tax)"),
+        "tax_raw": table.get("Tax"),
+        "availability_detail_raw": table.get("Availability"),
+        "num_reviews_raw": table.get("Number of reviews"),
+    }
