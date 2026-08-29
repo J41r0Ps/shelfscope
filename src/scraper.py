@@ -20,7 +20,12 @@ def parse_book_card(article) -> dict:
     Extract the fields we care about from one <article class="product_pod"> tag.
     """
     title = article.h3.a["title"]
-    detail_url = BASE_URL + "catalogue/" + article.h3.a["href"].replace("../../../", "").replace("../../", "").replace("../", "")   # This is a bit hacky, but it works for this site. The href is relative and has varying numbers of "../" at the start.
+    href = article.h3.a["href"]
+    # normalise: strip any "../" prefixes, then any leading "catalogue/" so we don't double it
+    href = href.replace("../", "")
+    if href.startswith("catalogue/"):
+        href = href[len("catalogue/"):]
+    detail_url = BASE_URL + "catalogue/" + href
 
     price_text = article.find("p", class_="price_color").get_text(strip=True)
                  
@@ -111,3 +116,23 @@ def parse_book_detail(url: str, delay: float = 0.5) -> dict:
         "availability_detail_raw": table.get("Availability"),
         "num_reviews_raw": table.get("Number of reviews"),
     }
+
+def scrape_all_details(urls: list[str], delay: float = 0.5, show_progress: bool = True) -> list[dict]:
+    """
+    Scrape detail pages for a list of book URLs.
+    Failures are captured rather than raised, so one bad page doesn't kill a long run.
+    """
+    results = []
+    iterator = urls
+
+    if show_progress:
+        from tqdm import tqdm
+        iterator = tqdm(urls, desc="Scraping detail pages")
+
+    for url in iterator:
+        try:
+            results.append(parse_book_detail(url, delay=delay))
+        except Exception as e:
+            results.append({"detail_url": url, "scrape_error": str(e)})
+
+    return results
