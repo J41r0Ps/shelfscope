@@ -1,9 +1,10 @@
 import time
 import requests
+from tqdm import tqdm
 from bs4 import BeautifulSoup
 
 BASE_URL = "https://books.toscrape.com/"
-
+HEADERS = {"User-Agent": "ShelfScope/1.0 (educational data science project)"}
 
 def get_soup(url: str, delay: float = 0.5) -> BeautifulSoup:
     """
@@ -11,8 +12,8 @@ def get_soup(url: str, delay: float = 0.5) -> BeautifulSoup:
     A small delay is applied before each request to be polite to the server.
     """
     time.sleep(delay)
-    response = requests.get(url)
-    response.raise_for_status()  # raises an error if the request failed (e.g. 404, 500)
+    response = requests.get(url, headers=HEADERS, timeout=10)
+    response.raise_for_status()     # Raise an exception if the request failed (e.g., 404 or 500)
     return BeautifulSoup(response.content, "lxml")
 
 def parse_book_card(article) -> dict:
@@ -126,7 +127,6 @@ def scrape_all_details(urls: list[str], delay: float = 0.5, show_progress: bool 
     iterator = urls
 
     if show_progress:
-        from tqdm import tqdm
         iterator = tqdm(urls, desc="Scraping detail pages")
 
     for url in iterator:
