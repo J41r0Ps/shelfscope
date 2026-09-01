@@ -35,7 +35,7 @@ clean mix of numeric and categorical fields, which is what makes meaningful expl
 ### Two-pass scraping strategy
 
 | Pass | Pages | Fields obtained |
-|---|---|---|
+| --- | --- | --- |
 | 1 — listing pages | 50 | title, price, star rating, availability, detail URL |
 | 2 — detail pages | 1000 | category, description, UPC, exact stock count, review count, tax breakdown |
 
@@ -47,7 +47,7 @@ analysis — only appears in the breadcrumb on each book's own page, not on the 
 ## 🧬 Pipeline (OSEMN)
 
 | Stage | Notebook | Output |
-|---|---|---|
+| --- | --- | --- |
 | **Obtain** | `01_scraping.ipynb` | `data/raw/books_raw.csv` (1000 × 13) |
 | **Scrub** | `03_cleaning.ipynb` | `data/processed/books_clean.csv` |
 | **Explore / Interpret** | `04_exploration.ipynb` | charts + written findings |
@@ -58,6 +58,7 @@ The ~20-minute scrape happens once.
 ---
 
 ## 📁 Structure
+
 ```
 shelfscope/
 ├── data/
@@ -77,7 +78,6 @@ shelfscope/
 
 ---
 
-
 ## ⚙️ Setup
 
 ```bash
@@ -95,22 +95,51 @@ Run the notebooks in order. `01` takes ~20 minutes (1050 polite HTTP requests); 
 
 - [x] Repo scaffolding, venv, requirements
 - [x] Scraper module + two-pass scrape (1000 books, 13 fields)
-- [ ] Cleaning: regex parsing, type conversion, duplicate handling
-- [ ] Exploratory analysis: distributions, correlations, boxplots per category
-- [ ] Findings write-up + data dictionary
+- [x] Cleaning: regex parsing, column pruning, dual-format export
+- [x] Exploratory analysis: distributions, correlation, permutation test, outlier detection
+- [x] Findings write-up + data dictionary
+
+---
+
+## 🔍 Key findings
+
+**The numeric data is synthetic — and the analysis proves it five different ways.** Price and
+rating are uniformly distributed, all pairwise correlations fall within ±0.03 of zero, a
+permutation test finds no category effect on price (p = 0.977), and both IQR and z-score outlier
+detection return zero results because the distributions have no tails.
+
+**The real findings are in the category field.** 22% of books (219) sit in non-genre categories:
+`Default` (152) and `Add a comment` (67) — the latter a UI element captured as a breadcrumb.
+Standard missing-value checks miss this completely, since the values are present but meaningless.
+
+**Stock is the one variable with genuine structure** — multimodal, clustering at 3 and 14–16
+copies, with its summary statistics actively mischaracterising its shape.
+
+Full write-up: [`docs/FINDINGS.md`](docs/FINDINGS.md) ·
+Schema: [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md)
+
+---
+
+## 🧪 Techniques applied
+
+| Area | Techniques |
+| --- | --- |
+| Scraping | `requests` + BeautifulSoup, pagination following, relative-URL normalisation, per-request error capture, polite delays |
+| Cleaning | Regex extraction, dictionary lookup mapping, constant/redundant column detection, duplicate investigation, CSV + JSON export |
+| Analysis | NumPy aggregations, manual skewness calculation, Pearson correlation, permutation testing, IQR and z-score outlier detection |
+| Visualisation | Matplotlib (histograms, boxplots, scatter, subplots) and Seaborn (heatmaps, grouped boxplots), reference lines, fixed colour scales |
 
 ---
 
 ## ⚠️ Limitations
 
-- **Prices and ratings on books.toscrape.com are randomly assigned** and carry no real-world
-  meaning — the site states this explicitly. Findings describe *patterns within this dataset*,
-  not real book-market economics. This is treated as a core caveat throughout the analysis,
-  not a footnote.
-- Review counts are `0` for every book on the site, making that field analytically empty —
-  documented rather than silently dropped.
-- One title appears twice in the catalogue (different UPCs and URLs) — genuine site data,
-  handled explicitly in the cleaning stage.
+- **Prices, ratings and stock are randomly generated** by the source site. No finding transfers
+  to real book-market economics. This is treated as the project's central caveat, not a footnote.
+- **22% of category labels are unusable** (`Default`, `Add a comment`), limiting genre-level
+  conclusions.
+- **Review counts are `0` for every book**, making the field analytically empty.
+- **Descriptions were collected but not analysed** — the text duplicates itself on-page and would
+  need cleaning first.
 
 ---
 
